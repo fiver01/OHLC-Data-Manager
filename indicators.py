@@ -2,7 +2,8 @@
 Indicators
 
 Description:
-Calculate technical indicators for a DataFrame with Open, Close, High, Low data columns.
+Calculate technical indicators for a DataFrame with Open, Close, High, Low data columns. This class manage missing (NaN)
+values calculating the indicators where previous values are present.
 
 @author: Davide Bonanni
 @Created on Fri Oct 28 18:26:23 2022

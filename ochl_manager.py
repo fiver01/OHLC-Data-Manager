@@ -11,30 +11,25 @@ License:
 This script is distributed under the GNU General Public License (GPL), Version 3, released on 29 June 2007.
 You can find a copy of the license at: [Link to the GPL v3 License](https://www.gnu.org/licenses/gpl-3.0.txt).
 """
-
-
-import logging
+import pandas as pd
+import numpy as np
 from datetime import datetime, timedelta
-import matplotlib; matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
-import plotly
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+import logging
 
-from utils.mpl_functions import *
-from MPL.computation import MPLManager
-from utils.indicators import Indicators
+from indicators import Indicators
+
 
 # Configure the logger
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s:%(filename)s:%(levelname)s: %(message)s',
-    filename='app.log',  # Specify the file name
+    filename='ochl_manager.log',  # Specify the file name
     datefmt='%Y-%m-%d %H:%M:%S',
     filemode='w'  # 'w' for overwrite the file on each run, 'a' to append to an existing file
 )
 
-class OCHLManager(MPLManager, Indicators):
+
+class OCHLManager(Indicators):
     """ Manage DataFrame with Open, Close, High, Low data columns. """
     open_col = 'open'
     close_col = 'close'
@@ -43,24 +38,18 @@ class OCHLManager(MPLManager, Indicators):
     volume_col = 'volume'
     date_col = 'date'
 
-    def __init__(self, df:pd.DataFrame, start_index=None, last_index=None,
-                 scale_column='open', pair_token='USDT', count_volume_anomalies=False):
+    def __init__(self, df:pd.DataFrame, pair_token='USDT', count_volume_anomalies=False):
         """
         If multiple input dataframes, concat the OCHL dataframes without duplicates and
         check the df columns. Input tables must contain "date", "open", "close", "high" and "low"
         columns. Other columns are optional.
         """
         self.table = _check_dataframe(df)
-        self.start_index = start_index
-        self.last_index = last_index
-        self.scale_column = scale_column
         self.anomaly_list = None
         self.count_volume_anomalies = count_volume_anomalies
-
         check_ochl(self.table)
         self.rename_column(f'Volume {pair_token}', 'volume')
 
-        MPLManager.__init__(self, self.table)
         Indicators.__init__(self, self.table)
 
     def __call__(self):
@@ -175,8 +164,12 @@ class OCHLManager(MPLManager, Indicators):
         number_anomalies = len(anomalies)
         zero_volumes = len(self.table[self.table[self.volume_col]==0])
 
-        report_dict = dict(number_jumps=number_gaps, max_jump=max_gap,
+        report_dict = dict(number_gaps=number_gaps, max_gap=max_gap,
                            number_anomalies=number_anomalies, zero_volumes=zero_volumes)
+
+        for key, value in report_dict.items():
+            print(f"{key}: {value}")
+
         return report_dict
 
     def invalidate_anomalies(self):
@@ -365,149 +358,6 @@ class OCHLManager(MPLManager, Indicators):
         weekly_data['date'] = weekly_data['date'] + timedelta(days=1)
         return weekly_data
 
-    def drop_MPL(self, k_suffix=[]):
-        """ Drop MPL columns with specific k. """
-        if isinstance(k_suffix, list):
-            pass
-        elif isinstance(k_suffix, str):
-            k_suffix = [k_suffix]
-
-        for k in k_suffix:
-            self.table = self.table[self.table.columns.drop(list(self.table.filter(regex=f'^[A-Za-z]MPL.*{k}')))]
-
-    def depict_MPL(self, ref_index, periods_list=[24], k=0.1,
-                   vol_indicator='ATR_24', border=20, CMPL=False, scale=False):
-        """
-        Plot the MPL of the ref_index.
-
-        Parameters
-        ------------
-        ref_index : int
-            Table index where MPL are calculated
-        periods_list : list()
-            List of period used to calculate the MPL
-        k : float
-        vol_indicator : str
-        border : int
-            Number of points to show before and after the ref_index and the ref_index+max(periods_list)
-        """
-        plotly.io.renderers.default = 'browser'
-
-        #
-        figure_table = self.table
-
-        # Create figure with secondary y-axis
-        fig = make_subplots(specs=[[{"secondary_y": True}]])
-        self.MPL_plot = fig
-
-        if scale:
-            scale_on_initial(figure_table, ref_index)
-            fig.update_layout(yaxis_range=[0.7, 1.3])
-
-        max_period = max(periods_list)
-        left_border_index = ref_index - border  # Set left index figure border
-        right_border_index = ref_index + max_period + border  # Set right index figure border
-        figure_table = figure_table[left_border_index:right_border_index]  # Figure df
-
-        for period in periods_list:
-            self.calc_MPL(ref_index, period, k, vol_indicator)
-            self._add_MPL_to_figure()
-            if CMPL:
-                self._add_CMPL_to_figure(ref_index, k)
-
-        self._add_vline(ref_index, color='Green')  # Add vertical line on ref_index
-
-        # Add Candlestick
-        fig.add_trace(go.Candlestick(x=figure_table['date'],
-                                     open=figure_table['open'],
-                                     high=figure_table['high'],
-                                     low=figure_table['low'],
-                                     close=figure_table['close'],
-                                     yaxis='y1',
-                                     name='Candlestick',
-                                     increasing_line_color='blue',
-                                     decreasing_line_color='gray'))
-
-        # Add figure title
-        fig.update_layout(
-            width=1800,
-            height=900,
-            title_text="MPL",
-            yaxis_tickformat='M')
-
-        fig.update_layout(legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1))
-
-        #fig.update_layout(yaxis_range=[5000,8000])
-
-        # Set x-axis title
-        fig.update_xaxes(title_text="Date")
-
-        # Set y-axes titles
-        fig.update_yaxes(title_text="<b>primary</b> Close", secondary_y=False)
-        # fig.update_yaxes(title_text="<b>secondary</b> Volume", range=[0, 3000000000], secondary_y=True)
-
-        fig.show()
-
-    def _add_MPL_to_figure(self):
-        """Add long and shorth MPL lines to the input candlechart."""
-        #
-        self._add_hline(self.MPL_long_index, self.MPL_limit, self.MPL_long, color='Green')
-        #
-        self._add_hline(self.MPL_short_index, self.MPL_limit, self.MPL_short, color='Red')
-        #
-        self._add_vline(self.MPL_limit, color='Red')
-
-    def _add_vline(self, index, color='', **kwargs):
-        """Add vertical line for input index."""
-        self.MPL_plot.add_vline(x=self.table.loc[index]['date'], 
-                                line_width=2, 
-                                line_dash="dash", 
-                                line_color=color,
-                                **kwargs)
-        
-    def _add_hline(self, left_index, right_index, y, color='', **kwargs):
-        """Add horizontal line on the MPL_plot."""
-        self.MPL_plot.add_shape(type='line',
-                                x0=self.table.loc[left_index]['date'],
-                                x1=self.table.loc[right_index]['date'],
-                                y0=y,
-                                y1=y,
-                                line=dict(color=color),
-                                **kwargs)
-
-    def _add_CMPL_to_figure(self, ref_index, k):
-        """ """
-        k = '{:02d}'.format(int(k * 10))
-        l_price0_col = f'lgmm_mean0_{k}'
-        l_price1_col = f'lgmm_mean1_{k}'
-        l_weight0_col = f'lgmm_weight0_{k}'
-        l_weight1_col = f'lgmm_weight1_{k}'
-        s_price0_col = f'sgmm_mean0_{k}'
-        s_price1_col = f'sgmm_mean1_{k}'
-        s_weight0_col = f'sgmm_weight0_{k}'
-        s_weight1_col = f'sgmm_weight1_{k}'
-
-        l_price0 = self.table[l_price0_col][ref_index]
-        l_price1 = self.table[l_price1_col][ref_index]
-        l_weight0 = self.table[l_weight0_col][ref_index] if self.table[l_weight0_col][ref_index] != 0 else 0.0001
-        l_weight1 = self.table[l_weight1_col][ref_index] if self.table[l_weight1_col][ref_index] != 0 else 0.0001
-        s_price0 = self.table[s_price0_col][ref_index]
-        s_price1 = self.table[s_price1_col][ref_index]
-        s_weight0 = self.table[s_weight0_col][ref_index] if self.table[s_weight0_col][ref_index] != 0 else 0.0001
-        s_weight1 = self.table[s_weight1_col][ref_index] if self.table[s_weight1_col][ref_index] != 0 else 0.0001
-
-        # Add long CMPL
-        self._add_hline(ref_index, self.MPL_limit, l_price0, opacity=l_weight0, color='orange')
-        self._add_hline(ref_index, self.MPL_limit, l_price1, opacity=l_weight1, color='orange')
-        # Add short CMPL
-        self._add_hline(ref_index, self.MPL_limit, s_price0, opacity=s_weight0, color='blue')
-        self._add_hline(ref_index, self.MPL_limit, s_price1, opacity=s_weight1, color='blue')
-
 
 def check_ochl(df, columns_lst=['date', 'open', 'close', 'high', 'low']):
     """
@@ -548,7 +398,7 @@ class MissingAttribute(AttributeError):
 
 
 def unix_to_datetime(unix_value):
-    """Convert Unix to datetime managing the exceptions return None. """
+    """ Convert Unix to datetime managing the exceptions return None. """
     try:
         return datetime.utcfromtimestamp(unix_value)
     except:
@@ -556,7 +406,7 @@ def unix_to_datetime(unix_value):
 
 
 def _timestamp_to_datetime(timestp, UTC_correction=0):
-    """Convert timestp to datetime"""
+    """ Convert timestp to datetime. """
 
     if not isinstance(timestp, str):
         return timestp
@@ -587,8 +437,10 @@ def move_columns_to_front(df, cols_to_move):
 
 
 def check_list(inp):
-    """Check if the input is a list. Transform the input str into a list with one element.
-    If the input is None return None. In all other cases return TypeError."""
+    """
+    Check if the input is a list. Transform the input str into a list with one element.
+    If the input is None return None. In all other cases return TypeError.
+    """
     if isinstance(inp, list):
         return inp
     elif isinstance(inp, str):
@@ -597,32 +449,6 @@ def check_list(inp):
         return list()
     else:
         raise TypeError("Wrong input format")
-
-
-def scale_on_initial(df, ref_index=0, std_col='open'):
-    """"""
-    try:
-        standard = df.loc[ref_index][std_col]
-        df['open'] = df['open'] / standard
-        df['close'] = df['close'] / standard
-        df['high'] = df['high'] / standard
-        df['low'] = df['low'] / standard
-
-        df.loc[:, df.columns.str.contains('^LMPL_price|^SMPL_price|^lgmm_mean|^sgmm_mean')] /= standard
-
-    except Exception:
-        raise MissingAttribute()
-
-
-def _get_index_distance(input_series, target_col):
-    """For the input series, return the difference between the index and target_col."""
-    ref_idx = input_series.name
-    tar_idx = input_series[target_col]
-    try:
-        diff = abs(tar_idx - ref_idx)
-        return diff
-    except:
-        raise TypeError('invalid operation between index and {}, check their format'.format(target_col))
 
 
 def _check_dataframe(i, separetor=','):
