@@ -17,7 +17,7 @@ OCHLManager is a Python class that facilitates the management and analysis of Op
 To use OCHLManager, simply instantiate the class with your OCHL DataFrame. The class provides methods for data manipulation, visualization, and applying technical indicators.
 The class was originally designed to handle 1-hour candlestick charts for cryptocurrencies but can be easily adapted to handle different timeframes and stock market data. Furthermore, the class is capable of generating daily and weekly timeframes based on hourly data.
 
-Example usage:
+Example usage on BTC/USDT pair OCHL data obtained from :
 
 ```python
 import pandas as pd
@@ -29,8 +29,43 @@ ochl_data = pd.read_csv(BTC_ochl)
 # Instantiate OCHLManager
 ochl_manager = OCHLManager(ochl_data)
 
-# Identify the anomalies and missing points
-ochl_manager.report()
+# Convert columns to datetime
+self.convert_column_to_datetime()
 
+# Remove additional columns
+self.clean_columns()
+
+# Order the data
+self.order_by_date()
+```
+The number of gaps and anomalies in the data can checked with the repor():
+```python
+# Print the number of gaps and anomalies
+report_dict = ochl_manager.report()
+```
+Missing or wrong data can be easily handled
+```python
+# Transfrom anomalies point into NaN
+self.invalidate_anomalies()
+
+# Remove large gaps between consecutives close and open price
+self.fix_inconsistency_open()
+
+# Fill missing data points
+self.fill_missing_dates()
+```
+
+All this operations can be performed in once with:
+
+```python
 # Clean and prepare the data
 ochl_manager.prepare_data()
+```
+Then, technical indicators can be implemented
+
+
+
+
+
+
+
