@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 import talib
 
+
 def check_blocks(func):
     def wrapper(self, *args, **kwargs):
         self._check_blocks()
