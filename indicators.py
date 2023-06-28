@@ -17,6 +17,13 @@ import numpy as np
 import pandas as pd
 import talib
 
+def check_blocks(func):
+    def wrapper(self, *args, **kwargs):
+        self._check_blocks()
+        return func(self, *args, **kwargs)
+    return wrapper
+
+
 class Indicators:
     open_col = 'open'
     close_col = 'close'
@@ -61,6 +68,7 @@ class Indicators:
         self.blocks = blocks
         return blocks
 
+    @check_blocks
     def add_SMA(self, timeperiod=21):
         """ Add the Simple Moving Average to the dataframe. """
         timeperiod = self.check_timeperiod(timeperiod)
@@ -70,6 +78,7 @@ class Indicators:
                 b[col_name] = talib.SMA(b[self.close_col], timeperiod=t)
                 self.update_column(b[col_name])
 
+    @check_blocks
     def add_EMA(self, timeperiod=21):
         """ Add the Exponential Moving Average to the dataframe. """
         timeperiod = self.check_timeperiod(timeperiod)
@@ -79,6 +88,7 @@ class Indicators:
                 b[col_name] = talib.EMA(b[self.close_col], timeperiod=t)
                 self.update_column(b[col_name])
 
+    @check_blocks
     def add_ATR(self, timeperiod=24):
         """ Add the Average True Range to the dataframe. """
         timeperiod = self.check_timeperiod(timeperiod)
@@ -88,6 +98,7 @@ class Indicators:
                 b[col_name] = talib.ATR(b[self.high_col], b[self.low_col], b[self.close_col], timeperiod=t)
                 self.update_column(b[col_name])
 
+    @check_blocks
     def add_NATR(self, timeperiod=14):
         """ Add the Normalized Average True Range to the dataframe. """
         timeperiod = self.check_timeperiod(timeperiod)
@@ -98,6 +109,7 @@ class Indicators:
                 b[col_name] = b[col_name] / 100
                 self.update_column(b[col_name])
 
+    @check_blocks
     def add_RSI(self, timeperiod=14):
         """ Add the Relative Strength Index to the dataframe. """
         timeperiod = self.check_timeperiod(timeperiod)
@@ -107,6 +119,7 @@ class Indicators:
                 b[col_name] = talib.RSI(b[self.close_col], timeperiod=t)
                 self.update_column(b[col_name])
 
+    @check_blocks
     def add_STOCHRSI(self, timeperiod=14, fastk_period=14, slowk_period=5, slowd_period=3):
         """ Add the Relative Strength Index to the dataframe. """
         timeperiod = self.check_timeperiod(timeperiod)
@@ -126,6 +139,7 @@ class Indicators:
                 self.update_column(b[col_name1])
                 self.update_column(b[col_name2])
 
+    @check_blocks
     def add_MACD(self, fastperiod=12, slowperiod=26, signalperiod=9):
         """ Add the MACD to the dataframe. """
         for b in self.blocks:
@@ -134,6 +148,7 @@ class Indicators:
             self.update_column(b['Signal'])
             self.update_column(b['Histogram'])
 
+    @check_blocks
     def add_BBANDS(self, timeperiod=14, nbdevup=2, nbdevdn=2):
         """ Add the Bollinger bands to the dataframe. """
         timeperiod = self.check_timeperiod(timeperiod)
@@ -149,6 +164,7 @@ class Indicators:
         """ """
         self.table['OBV'] = talib.OBV(self.table.close, self.table.volume)
 
+    @check_blocks
     def add_STOCH(self, fastk_period=14, slowk_period=3, **kwargs):
         """ Add the Stochastic Oscillator to the dataframe. """
         for b in self.blocks:
