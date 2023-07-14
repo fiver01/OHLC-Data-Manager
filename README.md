@@ -17,7 +17,7 @@ OHLCManager is a Python class that facilitates the management and analysis of Op
 To use OHLCManager, simply instantiate the class with your OCHL DataFrame. The class provides methods for data manipulation, visualization, and applying technical indicators.
 The class was originally designed to handle 1-hour candlestick charts for cryptocurrencies but can be easily adapted to handle different timeframes and stock market data. Furthermore, the class is capable of generating daily and weekly timeframes based on hourly data.
 
-Example usage on BTC/USDT pair OCHL data obtained from https://www.CryptoDataDownload.com.
+Example usage on BTC/USDT pair OHLC data obtained from https://www.CryptoDataDownload.com.
 
 ```python
 import pandas as pd
