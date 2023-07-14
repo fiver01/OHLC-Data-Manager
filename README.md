@@ -4,13 +4,13 @@ OHLCManager is a Python class that facilitates the management and analysis of Op
 
 ## Features
 
-- **DataFrame Management:** OHLCManager allows you to easily handle OCHL data stored in a Pandas DataFrame.
+- **DataFrame Management:** OHLCManager allows you to easily handle OHLC data stored in a Pandas DataFrame.
 - **Data Validation:** The class validates the DataFrame structure, ensuring that it contains the necessary columns: "date", "open", "close", "high", and "low".
-- **Concatenation:** If multiple input DataFrames are provided, OCHLManager can concatenate the OCHL tables, removing duplicates.
-- **Visualization:** OHLCManager offering convenient plotting and visualization functions for the OCHL data.
+- **Concatenation:** If multiple input DataFrames are provided, OHLCManager can concatenate the OHLC tables, removing duplicates.
+- **Visualization:** OHLCManager offering convenient plotting and visualization functions for the OHLC data.
 - **Indicators:** The class also inherits from the Indicators class, providing access to various technical indicators for further analysis.
 - **Missing Data Detection:** OHLCManager includes functionality to identify missing points in the data, allowing you to easily find gaps or missing entries in the OHLC series.
-- **Wrong Data Detection:** The class provides the ability to detect wrong data, such as inconsistent OCHL prices, helping with the cleaning process.
+- **Wrong Data Detection:** The class provides the ability to detect wrong data, such as inconsistent OHLC prices, helping with the cleaning process.
   
 ## Usage
 
@@ -67,10 +67,10 @@ ochl_manager.add_STOCHRSI()
 ochl_manager.add_MACD()
 ochl_manager.add_BBANDS()
 ```
-By utilizing hourly data, it is possible to generate consistent daily and weekly OCHL data across various timeframes:
+By utilizing hourly data, it is possible to generate consistent daily and weekly OHLC data across various timeframes:
 ```python
-daily_ochl = ochl_manager.generate_daily()
-weekly_ochl = ochl_manager.generate_weekly()
+daily_ohlc = ohlc_manager.generate_daily()
+weekly_ohlc = ohlc_manager.generate_weekly()
 ```
 
 
