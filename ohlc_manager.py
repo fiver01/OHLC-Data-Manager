@@ -1,8 +1,8 @@
 """
-OCHL Manager
+OHLC Manager
 
 Description:
-OCHLManager is a Python class that facilitates the management and analysis of Open, Close, High, Low (OCHL) data in a DataFrame.
+OHLCManager is a Python class that facilitates the management and analysis of Open, Close, High, Low (OHLC) data in a DataFrame.
 
 @author: Davide Bonanni
 @Created on Fri Oct 28 18:26:23 2022
@@ -23,13 +23,13 @@ from indicators import Indicators
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s:%(filename)s:%(levelname)s: %(message)s',
-    filename='ochl_manager.log',  # Specify the file name
+    filename='ohlc_manager.log',  # Specify the file name
     datefmt='%Y-%m-%d %H:%M:%S',
     filemode='w'  # 'w' for overwrite the file on each run, 'a' to append to an existing file
 )
 
 
-class OCHLManager(Indicators):
+class OHLCManager(Indicators):
     """ Manage DataFrame with Open, Close, High, Low data columns. """
     open_col = 'open'
     close_col = 'close'
@@ -40,14 +40,14 @@ class OCHLManager(Indicators):
 
     def __init__(self, df:pd.DataFrame, pair_token='USDT', count_volume_anomalies=False):
         """
-        If multiple input dataframes, concat the OCHL dataframes without duplicates and
+        If multiple input dataframes, concat the OHLC dataframes without duplicates and
         check the df columns. Input tables must contain "date", "open", "close", "high" and "low"
         columns. Other columns are optional.
         """
         self.table = _check_dataframe(df)
         self.anomaly_list = None
         self.count_volume_anomalies = count_volume_anomalies
-        check_ochl(self.table)
+        check_ohlc(self.table)
         self.rename_column(f'Volume {pair_token}', 'volume')
 
         Indicators.__init__(self, self.table)
@@ -64,7 +64,7 @@ class OCHLManager(Indicators):
                 return True
         
     def add_table(self, new_table, start_index=None, last_index=None):
-        """Append OCHL row of the arguments to the object OCHLTable"""
+        """Append OHLC row of the arguments to the object OHLCTable"""
         
         new_table = _check_dataframe(new_table)
         
@@ -80,7 +80,7 @@ class OCHLManager(Indicators):
         except (TypeError, AttributeError) as t_err:
             raise Exception("Check type of added file. {}, {}".format(t_err, type(t_err)))
         except Exception as err:
-            print("Something wrong with the dataframe concatenation of OCHLTable")
+            print("Something wrong with the dataframe concatenation of OHLCTable")
             raise Exception("Unexpected {}, {}".format(err, type(err)))
 
     def convert_column_to_datetime(self, columns='date', UTC_correction=0):
@@ -173,7 +173,7 @@ class OCHLManager(Indicators):
         return report_dict
 
     def invalidate_anomalies(self):
-        """ Replace anomaly OCHLV values with NaN. """
+        """ Replace anomaly OHLCV values with NaN. """
         if not isinstance(self.anomaly_list, list):
             self.find_anomalies()
         for a in self.anomaly_list:
@@ -181,7 +181,7 @@ class OCHLManager(Indicators):
         print(f"Removed {len(self.anomaly_list)} anomalies.")
 
     def _invalidate_point(self, loc):
-        """ Transform OCHLV column into nan for at the argument location. """
+        """ Transform OHLCV column into nan for at the argument location. """
         self.table.iloc[loc, self.table.columns.get_loc(self.open_col)] = np.NaN
         self.table.iloc[loc, self.table.columns.get_loc(self.close_col)] = np.NaN
         self.table.iloc[loc, self.table.columns.get_loc(self.high_col)] = np.NaN
@@ -202,7 +202,7 @@ class OCHLManager(Indicators):
 
     def check_anomaly(self, ref_location):
         """
-        Check if there is an anomaly in the OCHL location of the table.
+        Check if there is an anomaly in the OHLC location of the table.
 
         Anomalies are detected based on the values in the 'open', 'close', 'high', 'low',
         and 'volume' columns at the specified reference location.
@@ -226,7 +226,7 @@ class OCHLManager(Indicators):
           `count_volume_anomalies` flag is enabled, it is considered an anomaly.
 
         Note:
-        Anomalies may indicate irregularities or data quality issues in the OCHL dataset.
+        Anomalies may indicate irregularities or data quality issues in the OHLC dataset.
         By identifying anomalies, you can take appropriate actions, such as data cleaning
         or further investigation, to ensure data integrity.
         """
@@ -342,7 +342,7 @@ class OCHLManager(Indicators):
             self.table[col] = self.table[col].replace(0, np.nan).interpolate()
 
     def generate_daily(self):
-        """ Return a dataframe with daily OCHL from the hour data. """
+        """ Return a dataframe with daily OHLC from the hour data. """
         # daily_data = copy.deepcopy(self.table)
         # daily_data['date'] = pd.to_datetime(daily_data['date'])
         daily_data = self.table.groupby(pd.Grouper(key='date', freq='D')).agg(
@@ -351,7 +351,7 @@ class OCHLManager(Indicators):
         return daily_data
 
     def generate_weekly(self):
-        """ Return a dataframe with weekly OCHL from the hour data. """
+        """ Return a dataframe with weekly OHLC from the hour data. """
         weekly_data = self.table.groupby(pd.Grouper(key='date', freq='W')).agg(
             {'open': 'first', 'close': 'last', 'high': 'max', 'low': 'min', 'volume': 'sum'})
         weekly_data.reset_index(inplace=True)
@@ -359,7 +359,7 @@ class OCHLManager(Indicators):
         return weekly_data
 
 
-def check_ochl(df, columns_lst=['date', 'open', 'close', 'high', 'low']):
+def check_ohlc(df, columns_lst=['date', 'open', 'close', 'high', 'low']):
     """
     Check the presence of columns name in columns_lst.
 
