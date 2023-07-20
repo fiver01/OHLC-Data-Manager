@@ -23,7 +23,7 @@ Example usage on BTC/USDT pair OHLC data obtained from https://www.CryptoDataDow
 import pandas as pd
 from ohlc_manager import OHLCManager
 
-BTC_ochl = 'sample_data/Binance_BTCUSDT_1h.csv'
+BTC_ohlc = 'sample_data/Binance_BTCUSDT_1h.csv'
 ohlc_data = pd.read_csv(BTC_ohlc)
 
 # Instantiate OHLCManager
